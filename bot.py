@@ -1,56 +1,54 @@
 import os
-import requests
+import random
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
-from moviepy.editor import AudioFileClip, ImageClip
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
+from moviepy.editor import ImageClip
 
-TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# 1. Background image download (Space)
-if not os.path.exists("bg.jpg"):
-    print("Downloading background...")
+def create_space_video(text, output_path="space_video.mp4"):
+    W, H = 720, 1280
+    img = Image.new('RGB', (W, H), (5, 5, 20))
+    draw = ImageDraw.Draw(img)
+    for _ in range(300):
+        x = random.randint(0, W)
+        y = random.randint(0, H)
+        r = random.randint(1, 3)
+        draw.ellipse([x, y, x+r, y+r], fill=(255,255,255))
     try:
-        # Beautiful space image
-        url = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&q=80"
-        r = requests.get(url, timeout=15)
-        open("bg.jpg", "wb").write(r.content)
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 50)
+        small_font = ImageFont.truetype("DejaVuSans.ttf", 36)
     except:
-        # agar net fail to black background
-        Image.new('RGB', (1080, 1920), (5, 10, 30)).save("bg.jpg")
+        font = ImageFont.load_default()
+        small_font = ImageFont.load_default()
+    draw.text((W//2, 640), "YOUR VOICE IN SPACE", font=font, fill=(255,255,255), anchor="mm")
+    draw.text((W//2, 740), text[:40], font=small_font, fill=(200,200,200), anchor="mm")
+    img.save("bg.jpg")
+    clip = ImageClip("bg.jpg", duration=6)
+    clip.write_videofile(output_path, fps=24, codec='libx264', audio=False, logger=None)
+    return output_path
 
-async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🚀 Voice mil gaya! Space video bana raha hu... 30 sec lagega")
-
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Voice mili! Video bana raha hu...")
     try:
-        # Voice download
-        file = await context.bot.get_file(update.message.voice.file_id)
-        await file.download_to_drive("voice.ogg")
-
-        # OGG to MP3
-        audio = AudioFileClip("voice.ogg")
-        audio.write_audiofile("voice.mp3", logger=None)
-        audio = AudioFileClip("voice.mp3")
-        
-        # Image ko video banao - jitni audio utna video
-        bg_clip = ImageClip("bg.jpg", duration=audio.duration)
-        bg_clip = bg_clip.set_audio(audio)
-        bg_clip = bg_clip.resize(height=1920)
-        # Center crop to 1080x1920
-        w, h = bg_clip.size
-        bg_clip = bg_clip.crop(x_center=w/2, y_center=h/2, width=1080, height=1920)
-        
-        bg_clip.write_videofile("final.mp4", fps=24, codec="libx264", audio_codec="aac", logger=None)
-
-        await update.message.reply_text("✅ Ban gaya! Bhej raha hu...")
-        await update.message.reply_video(video=open("final.mp4", "rb"), caption="🚀 Your Space Voice Video Ready!")
-
+        voice_file = await update.message.voice.get_file()
+        await voice_file.download_to_drive("voice.ogg")
+        user_name = update.effective_user.first_name or "Explorer"
+        video_path = create_space_video(f"{user_name}")
+        await update.message.reply_video(video=open(video_path, 'rb'), caption=f"{user_name}, teri awaz space me hai!")
     except Exception as e:
-        print(e)
-        await update.message.reply_text(f"Error aaya: {e}")
+        await update.message.reply_text(f"Error: {e}")
 
-# Bot start
-app = Application.builder().token(TOKEN).build()
-app.add_handler(MessageHandler(filters.VOICE, voice_handler))
-print("Bot Started...")
-app.run_polling()
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Mujhe Voice Message bhej, mai Space Video bana dunga!")
+
+def main():
+    print("Bot Started...")
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
