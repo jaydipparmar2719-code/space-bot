@@ -1,5 +1,2 @@
-python-telegram-bot==13.15
-Pillow==10.2.0
-moviepy==1.0.3
-requests
-imageio-ffmpeg
+python-telegram-bot==20.7
+python-dotenv
