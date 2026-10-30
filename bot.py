@@ -3,7 +3,7 @@ import random
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import ImageClip
+#from moviepy.editor import ImageClip
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
