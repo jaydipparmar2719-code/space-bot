@@ -1,3 +1,6 @@
+from flask import Flask
+import threading
+import os
 import os
 import random
 from telegram import Update
@@ -51,4 +54,15 @@ def main():
     app.run_polling()
 
 if __name__ == "__main__":
+    # Render ke liye fake website
+web_app = Flask(__name__)
+@web_app.route('/')
+def home():
+    return "Bot is running"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host='0.0.0.0', port=port)
+
+threading.Thread(target=run_web).start()
     main()
