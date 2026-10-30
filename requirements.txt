@@ -1,5 +1,6 @@
 python-telegram-bot==20.7
 moviepy==1.0.3
-Pillow==10.2.0
+python-telegram-bot==20.7
+Pillow==11.1.0
 requests
 imageio-ffmpeg
